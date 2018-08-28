@@ -5314,9 +5314,7 @@ class mod_grouptool {
                         $row = array();
                         $row['userid'] = $curuser;
                         $row['name'] = $fullname;
-                        foreach ($namefields as $field) {
-                            $row[$field] = $userinfo[$curuser]->$field;
-                        }
+                        $this->add_namefields_useridentity($row, $userinfo[$curuser]);
                         // We set those in any case, because PDF and TXT export needs them anyway!
                         $row['email'] = $userinfo[$curuser]->email;
                         $row['idnumber'] = $userinfo[$curuser]->idnumber;
@@ -5339,9 +5337,7 @@ class mod_grouptool {
                         $row = array();
                         $row['userid'] = $curuser;
                         $row['name'] = $fullname;
-                        foreach ($namefields as $field) {
-                            $row[$field] = $userinfo[$curuser]->$field;
-                        }
+                        $this->add_namefields_useridentity($row, $userinfo[$curuser]);
                         $row['email'] = $userinfo[$curuser]->email;
                         $row['idnumber'] = $userinfo[$curuser]->idnumber;
                         $row['status'] = "+";
@@ -5363,9 +5359,7 @@ class mod_grouptool {
                         $row = array();
                         $row['userid'] = $curuser;
                         $row['name'] = $fullname;
-                        foreach ($namefields as $field) {
-                            $row[$field] = $userinfo[$curuser]->$field;
-                        }
+                        $this->add_namefields_useridentity($row, $userinfo[$curuser]);
                         // We set those in any case, because PDF and TXT export needs them anyway!
                         $row['email'] = $userinfo[$curuser]->email;
                         $row['idnumber'] = $userinfo[$curuser]->idnumber;
@@ -5392,34 +5386,7 @@ class mod_grouptool {
                     $row['userid'] = $curuser;
                     $row['rank'] = $rank;
                     $row['name'] = $fullname;
-                    foreach ($namefields as $namefield) {
-                        if (!empty($userinfo[$curuser]->$namefield)) {
-                            $row[$namefield] = $userinfo[$curuser]->$namefield;
-                        } else {
-                            $row[$namefield] = '';
-                        }
-                    }
-                    if (empty($CFG->showuseridentity)) {
-                        if (!empty($userinfo[$curuser]->idnumber)) {
-                            $row['idnumber'] = $userinfo[$curuser]->idnumber;
-                        } else {
-                            $row['idnumber'] = '-';
-                        }
-                        if (!empty($userinfo[$curuser]->email)) {
-                            $row['email'] = $userinfo[$curuser]->email;
-                        } else {
-                            $row['email'] = '-';
-                        }
-                    } else {
-                        $fields = explode(',', $CFG->showuseridentity);
-                        foreach ($fields as $field) {
-                            if (!empty($userinfo[$curuser]->$field)) {
-                                $row[$field] = $userinfo[$curuser]->$field;
-                            } else {
-                                $row[$field] = '';
-                            }
-                        }
-                    }
+                    $this->add_namefields_useridentity($row, $userinfo[$curuser]);
                     // We set those in any case, because PDF and TXT export needs them anyway!
                     $row['email'] = $userinfo[$curuser]->email;
                     $row['idnumber'] = $userinfo[$curuser]->idnumber;
@@ -5447,6 +5414,45 @@ class mod_grouptool {
             return $return;
         } else {
             return 0;
+        }
+    }
+
+    /**
+     * Add additional user fields and useridentity fields to the row (at least adds idnumber and email to be displayed).
+     *
+     * @param mixed[] $row Associative array with table data for this user
+     * @param stdClass $user the user's DB record
+     */
+    protected function add_namefields_useridentity(&$row, $user) {
+        global $CFG;
+        $namefields = get_all_user_name_fields();
+        foreach ($namefields as $namefield) {
+            if (!empty($user->$namefield)) {
+                $row[$namefield] = $user->$namefield;
+            } else {
+                $row[$namefield] = '';
+            }
+        }
+        if (empty($CFG->showuseridentity)) {
+            if (!empty($user->idnumber)) {
+                $row['idnumber'] = $user->idnumber;
+            } else {
+                $row['idnumber'] = '-';
+            }
+            if (!empty($user->email)) {
+                $row['email'] = $user->email;
+            } else {
+                $row['email'] = '-';
+            }
+        } else {
+            $fields = explode(',', $CFG->showuseridentity);
+            foreach ($fields as $field) {
+                if (!empty($user->$field)) {
+                    $row[$field] = $user->$field;
+                } else {
+                    $row[$field] = '';
+                }
+            }
         }
     }
 
@@ -5726,6 +5732,13 @@ class mod_grouptool {
 
             // Start row for groups general sheet!
             $j = 0;
+            $columncount = 1 + count($namefields);
+            if (!empty($CFG->showuseridentity)) {
+                $fields = explode(',', $CFG->showuseridentity);
+                $columncount += count($fields);
+            } else {
+                $columncount += 2;
+            }
             foreach ($groups as $key => $group) {
                 // Add worksheet for each group!
                 $groupworksheets[$key] = $workbook->add_worksheet($group->name);
@@ -5741,10 +5754,10 @@ class mod_grouptool {
                 $mregdata = isset($group->mreg_data) ? $group->mreg_data : array();
                 // Groupname as headline!
                 $groupworksheets[$key]->write_string(0, 0, $groupname, $headlineformat);
-                $groupworksheets[$key]->merge_cells(0, 0, 0, 3);
+                $groupworksheets[$key]->merge_cells(0, 0, 0, $columncount - 1);
                 if ($generalsheet) {
                     $allgroupsworksheet->write_string($j, 0, $groupname, $headlineformat);
-                    $allgroupsworksheet->merge_cells($j, 0, $j, 3);
+                    $allgroupsworksheet->merge_cells($j, 0, $j, $columncount - 1);
                 }
 
                 // Groupinfo on top!

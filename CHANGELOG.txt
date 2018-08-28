@@ -1,5 +1,11 @@
 CHANGELOG
 =========
+unreleased (2018-08-28)
+-----------------------
+
+* [FIXED] #5716 fix XLSX and ODS exports missing some user identity fields data for registered users
+
+
 3.4.1 (2018-03-14)
 ------------------
 
